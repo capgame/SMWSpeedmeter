@@ -1,0 +1,17 @@
+#crop-wrap{
+	display: flex;
+	width: 90%;
+	margin: 10px auto;
+	justify-content: space-between;
+}
+#input-wrap{
+	text-align: right;
+}
+
+#drag-btn{
+	margin-top: 10px;
+}
+
+#crop-full{
+	margin-top: 10px;
+}

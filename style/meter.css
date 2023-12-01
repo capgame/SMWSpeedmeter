@@ -1,0 +1,15 @@
+#speed{
+	font-size: 30px;
+	flex-grow: 1;	/*幅いっぱい*/
+}
+#speed-wrap{
+	display: flex;
+	width: 90%;
+	margin: 5px auto;
+	justify-content: space-between;
+}
+
+.unreliable{
+	text-decoration: line-through;
+	color: #a0a0a0;
+}

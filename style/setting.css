@@ -1,0 +1,42 @@
+select{
+	background-color: #313436;
+	color: #dcddde;
+}
+#select-device{
+	width: 75%;
+}
+button{
+	font: inherit;
+	color: inherit;
+	padding: 3px 10px;
+	margin: 5px 0;
+	background-color: #313436;
+	border: 1px solid #74b1be;
+	/* border-radius: 1px; */
+}
+button:hover{
+	transition: 0.1s;
+	background-color: #54636d;
+}
+button:disabled{
+	color: #b8babb;
+	background-color: #3e4951;
+	border: 1px solid #406169;
+}
+
+h2{
+	display: flex;
+	align-items: center;
+	margin: 0 10px;
+}
+h2::before,
+h2::after {
+	content: '';
+	flex-grow: 1;
+	height: 1px;
+	background: #54636d;
+	margin: 0 10px;
+}
+.disabled-area{
+	color: #9c9d9e;
+}

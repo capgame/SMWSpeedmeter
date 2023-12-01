@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-eval' 'self' https://unpkg.com/">
+		<meta http-equiv="Content-Security-Policy" content="style-src 'self' 'unsafe-inline'">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" href="style/main.css">
+		<link rel="stylesheet" href="style/setting.css">
+		<link rel="stylesheet" href="style/cropping.css">
+		<link rel="stylesheet" href="style/meter.css">
+		<title>SMWSpeedmeter</title>
+		<script src="https://unpkg.com/vue@next"></script>
+	</head>
+	<body>
+		<header><img src="assets/icon.ico" height="16">SMWSpeedmeter</header>
+		<div id="app">
+			<div id="setting" v-if="scene === 0">
+				<button type="button" id="start" @click="meterScene">測定開始</button>
+				<h2>映像設定</h2>
+				<div>
+					<h3>キャプチャデバイス</h2>
+					<select id="select-device" v-model="setting.deviceId">
+						<option value="none" disabled>キャプチャデバイスを選択</option>
+						<option v-for="device in videoDevicesList" :value="device.deviceId">{{device.label}}</option>
+					</select><br>
+					<button type="button" @click="getVideoDevices()">再取得</button>
+					<h3>クロップ</h2>
+					<p>切り取り範囲: 始点({{setting.cropRect.x}},{{setting.cropRect.y}}) サイズ({{setting.cropRect.w}},{{setting.cropRect.h}})</p>
+					<button type="button" @click="cropScene">ゲーム画面を切り取る</button>
+				</div>
+				<h2>測定設定</h2>
+				<div>
+					<h3>間隔</h3>
+					<select v-model.number="setting.intervalFrame">
+						<option value="32" selected>32F(約0.53秒)</option>
+						<option value="16" disabled>16F(約0.27秒)</option>
+						<option value="8" disabled>8F(約0.13秒)</option>
+					</select><br>
+					<p>※短いほど負荷が大きくなります</p>
+					<h3>効果音</h3>
+					<label>速度50飛行を検知したときに効果音を鳴らす <input type="checkbox" v-model="setting.playsSE"></label>
+					<div :class="{'disabled-area': !setting.playsSE}">
+						<p>効果音を鳴らすまでの時間</p>
+						<div>
+							<input type="range" min="32" max="160" step="32" v-model.number="setting.SEPlayTimingFrame" :disabled="!setting.playsSE">
+							{{setting.SEPlayTimingFrame < 100 ? "&ensp;" : ""}}{{setting.SEPlayTimingFrame}}F(約{{(setting.SEPlayTimingFrame / 60).toFixed(2)}}秒)
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="cropping" v-show="scene === 1">
+				<h2>ゲーム画面を切り取る</h2>
+				<canvas id="crop-full" width="384" height="216"></canvas>
+				<div id="crop-wrap">
+					<div id="input-wrap">
+						始点X: <input type="number" min="0" max="1920" v-model="setting.cropRect.x"><br>
+						始点Y: <input type="number" min="0" max="1080" v-model="setting.cropRect.y"><br>
+						幅: <input type="number" min="1" max="1920" v-model="setting.cropRect.w"><br>
+						高さ: <input type="number" min="1" max="1080" v-model="setting.cropRect.h"><br>
+						<button type="button" id="drag-btn" disabled>ドラッグして切り取る</button>
+					</div>
+					<canvas id="crop-zoom" width="160" height="160"></canvas>
+				</div>
+				<p>ゲーム画面のみが映るように切り取ってください。</p>
+				<button type="button" @click="settingScene()">OK</button>
+			</div>
+
+			<div id="main" v-show="scene === 2">
+				<div id="speed-wrap">
+					<span id="speed" v-bind:class="{unreliable: !isReliable}">{{estSpeed}}</span>
+					<button type="button" id="return" @click="settingScene()">戻る</button>
+				</div>
+			</div>
+		</div>
+		<script src="src/compare.js"></script>
+		<script src="src/main.js"></script>
+	</body>
+</html>
