@@ -34,8 +34,8 @@
 					<h3>間隔</h3>
 					<select v-model.number="setting.intervalFrame">
 						<option value="32" selected>32F(約0.53秒)</option>
-						<option value="16" disabled>16F(約0.27秒)</option>
-						<option value="8" disabled>8F(約0.13秒)</option>
+						<option value="16">16F(約0.27秒)</option>
+						<option value="8">8F(約0.13秒)</option>
 					</select><br>
 					<p>※短いほど負荷が大きくなります</p>
 					<h3>効果音</h3>
@@ -69,12 +69,13 @@
 
 			<div id="main" v-show="scene === 2">
 				<div id="speed-wrap">
-					<span id="speed" v-bind:class="{unreliable: !isReliable}">{{estSpeed}}</span>
+					<span id="speed" v-bind:class="{warning: isWarning}">{{speedHistory[0]}}</span>
 					<button type="button" id="return" @click="settingScene()">戻る</button>
 				</div>
 			</div>
 		</div>
 		<script src="src/compare.js"></script>
 		<script src="src/main.js"></script>
+		<script src="src/dev.js"></script>
 	</body>
 </html>

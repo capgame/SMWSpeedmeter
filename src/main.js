@@ -4,10 +4,10 @@ const app = Vue.createApp({
 			videoDevicesList: [],
 			video: document.createElement('video'),
 			canvas: document.createElement('canvas'),
-			estSpeed: 0,
+			speedHistory: [0],
+			imageDataHistory: [],
+			isWarning: false,
 
-			isReliable: true,
-			prevImageData: new ImageData(1,1),
 			scene: 0,	//0: 設定,1: クロップ,2: 実行中
 			intervalId: -1,
 			setting: {
@@ -20,8 +20,9 @@ const app = Vue.createApp({
 				},
 				intervalFrame: 32,
 				playsSE: false,
-				SEPlayTimingFrame: 96,	//何フレーム以上50飛行をした場合に効果音を鳴らすか
+				SEPlayTimingFrame: 128,	//何フレーム以上50飛行をした場合に効果音を鳴らすか
 			},
+			se: new Audio(),
 		}
 	},
 	mounted(){
@@ -30,6 +31,9 @@ const app = Vue.createApp({
 
 		this.canvas.width = 256;
 		this.canvas.height = 224;
+
+		this.se.src = "assets/warning.mp3";
+		this.se.volume = 0.3;
 	},
 	methods: {
 		getVideoDevices(){
@@ -52,7 +56,6 @@ const app = Vue.createApp({
 				this.scene = 2;
 				window.api.changeWindowSize(180,90);
 				window.api.setAlwaysOnTop(true);
-				// window.api.changeWindowSize(300,320);
 			
 				const ctx = this.canvas.getContext("2d",{willReadFrequently: true});
 
@@ -65,16 +68,61 @@ const app = Vue.createApp({
 					ctx.drawImage(this.video,cropRect.x,cropRect.y,cropRect.w,cropRect.h,0,0,GAME_WIDTH,GAME_HEIGHT);
 					
 					let matchRates = [];
+
+					const compareSourceImage =
+					  this.setting.intervalFrame == 32 ? this.imageDataHistory[0]
+					: this.setting.intervalFrame == 16 ? this.imageDataHistory[1]
+					: this.setting.intervalFrame ==  8 ? this.imageDataHistory[3] : this.imageDataHistory[7];
+
+					if(compareSourceImage === undefined){//ImageDataが無い時→保存だけしてReturn
+						this.imageDataHistory.unshift(ctx.getImageData(compareRect.x,compareRect.y,compareRect.w,compareRect.h));
+						return;
+					}
+
 					for(let x = 0;x < GAME_WIDTH - compareRect.w + 1;x++){
 						const targetImage = ctx.getImageData(x,compareRect.y,compareRect.w,compareRect.h);
-						const similarity = targetImage.compareTo(this.prevImageData,5);
+						const similarity = targetImage.compareTo(compareSourceImage,5,1);
+						// const similarity = targetImage.compareTo(compareSourceImage,24,2);
 						matchRates.push({x,similarity});
 					}
+
 					matchRates.sort((a,b) => b.similarity - a.similarity);	//similarityで降順ソート
-					this.estSpeed = 64 - matchRates[0].x;
-					this.isReliable = matchRates[0].similarity - matchRates[1].similarity > 0.01;
-					this.prevImageData = ctx.getImageData(compareRect.x,compareRect.y,compareRect.w,compareRect.h);
+					const estSpeed = 64 - matchRates[0].x;
+					// console.log(matchRates[0].similarity);
+
+					const diffLimit = 0.003;//２番目と１番目の一致率の差がこの値以上ならOK
+					const isReliable = matchRates[0].similarity - matchRates[1].similarity > diffLimit;
+					console.log(matchRates[0].similarity - matchRates[1].similarity);
+
+					if(isReliable){
+						this.speedHistory.unshift(estSpeed);
+					}else{//Reliableじゃなかったら前回のを引き続き使用
+						this.speedHistory.unshift(this.speedHistory[0]);
+					}
+					this.speedHistory.length = Math.min(this.speedHistory.length,20);
+
+					const detectWarning = () => {
+						const checkIndex = this.setting.SEPlayTimingFrame / this.setting.intervalFrame;	//historyの調べる数
+						let speed50Count = 0;
+						for(let i = 0;i < checkIndex;i++){
+							if(this.speedHistory[i] === 50){
+								speed50Count += 1;
+							}
+						}
+						console.log(checkIndex,speed50Count);
+						return speed50Count === checkIndex;
+					};
+					if(detectWarning()){
+						this.isWarning = true;
+						if(this.setting.playsSE) this.se.play();
+					}else{
+						this.isWarning = false;
+					}
+
+					this.imageDataHistory.unshift(ctx.getImageData(compareRect.x,compareRect.y,compareRect.w,compareRect.h));
+					this.imageDataHistory.length = Math.min(this.imageDataHistory.length,8);
 				},1000 / 60 * this.setting.intervalFrame);
+			// },0);
 			}).catch((e) => {
 				if(e === 1){
 					alert("キャプチャデバイスを選択してください。");
@@ -156,7 +204,6 @@ const app = Vue.createApp({
 
 window.onload = () => {
 	document.onkeydown = e => {
-		console.log(e);
 		if(e.ctrlKey && e.code === "KeyR"){
 			return false;	//リロード無効化
 		}
