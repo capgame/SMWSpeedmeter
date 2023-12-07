@@ -1,5 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const Store = require('electron-store');
 const path = require("path");
+
+const store = new Store();
 
 const createWindow = () => {
 	const mainWindow = new BrowserWindow({
@@ -24,10 +27,18 @@ const createWindow = () => {
 	ipcMain.handle('setAlwaysOnTop', async (e,bool) => {
 		mainWindow.setAlwaysOnTop(bool);
 	});
+	ipcMain.handle('store_set', async (e,key,value) => {
+		store.set(key,value)
+	});
+	ipcMain.handle('store_get', async (e,key) => {
+		return store.get(key);
+	});
+	ipcMain.handle('store_has', async (e,key) => {
+		return store.has(key);
+	});
 
 
 	mainWindow.setMenuBarVisibility(false);
-	//mainWindow.webContents.openDevTools({mode: "detach"});
 	mainWindow.loadFile('index.html');
 };
 

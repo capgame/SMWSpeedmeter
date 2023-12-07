@@ -25,7 +25,7 @@ const app = Vue.createApp({
 			se: new Audio(),
 		}
 	},
-	mounted(){
+	async mounted(){
 		this.getVideoDevices();
 		this.settingScene();
 
@@ -34,6 +34,11 @@ const app = Vue.createApp({
 
 		this.se.src = "assets/warning.mp3";
 		this.se.volume = 0.3;
+
+		const isSaved = await window.api.store_has("setting");
+		if(isSaved){
+			this.setting = await window.api.store_get("setting");
+		}
 	},
 	methods: {
 		getVideoDevices(){
@@ -44,7 +49,7 @@ const app = Vue.createApp({
 			});
 		},
 		settingScene(){
-			window.api.changeWindowSize(400,570);
+			window.api.changeWindowSize(400,600);
 			window.api.setAlwaysOnTop(false);
 			this.scene = 0;
 			if(this.intervalId !== -1){
@@ -199,6 +204,14 @@ const app = Vue.createApp({
 				});
 			});
 		},
+		saveSettings(){
+			window.api.store_set("setting",JSON.stringify(this.setting))
+			.then(() => {
+				alert("設定を保存しました。");
+			}).catch(() => {
+				alert("設定を保存できませんでした。")
+			});
+		}
 	},
 }).mount("#app");
 
