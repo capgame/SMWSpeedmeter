@@ -15,11 +15,15 @@
 	color: #f48a8a;
 }
 
-.unreliable::before{
-	content: "(";
+.unreliable{
 	color: #888888;
+	vertical-align: middle;
+}
+.unreliable::before{
+	content: "（";
+	font-size: 30px;
 }
 .unreliable::after{
-	content: ")";
-	color: #888888;
+	content: "）";
+	font-size: 30px;
 }

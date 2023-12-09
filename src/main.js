@@ -166,8 +166,6 @@ const app = Vue.createApp({
 				zoomCtx.fillRect(144,144,16,16);
 
 				this.intervalId = setInterval(() => {
-					fullCtx.drawImage(this.video,0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-					
 					const fillOutsideDark = () => {
 						fullCtx.fillRect(0,0,this.video.videoWidth,parseInt(cropRect.y * scaleY));	//上
 						fullCtx.fillRect(0,parseInt(cropRect.y * scaleX),cropRect.x * scaleX,parseInt(cropRect.h * scaleY));	//左
@@ -183,7 +181,7 @@ const app = Vue.createApp({
 						zoomCtx.drawImage(this.video,cropRect.x,cropRect.y + cropRect.h - zoomedSizeH,zoomedSizeW,zoomedSizeH, 4,84,72,72);	//左下
 						zoomCtx.drawImage(this.video,cropRect.x + cropRect.w - zoomedSizeW,cropRect.y + cropRect.h - zoomedSizeH,zoomedSizeW,zoomedSizeH,84,84,72,72);	//右下
 					};
-
+					fullCtx.drawImage(this.video,0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
 					fillOutsideDark();
 					drawZoomedImages();
 				},1000 / 60);
@@ -210,9 +208,13 @@ const app = Vue.createApp({
 				});
 			});
 		},
-		saveSettings(){
+		saveSettings(alerts = false){
 			window.api.store_set("setting",JSON.stringify(this.setting))
-			.then().catch(() => {
+			.then(() => {
+				if(alerts){
+					alert("設定を保存しました。")
+				}
+			}).catch(() => {
 				alert("設定を保存できませんでした。")
 			});
 		}
