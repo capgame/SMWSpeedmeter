@@ -1,15 +1,25 @@
-#speed{
-	font-size: 30px;
-	flex-grow: 1;	/*幅いっぱい*/
-}
 #speed-wrap{
 	display: flex;
 	width: 90%;
 	margin: 5px auto;
 	justify-content: space-between;
 }
+#speed{
+	font-size: 40px;
+	font-weight: bold;
+	flex-grow: 1;	/*幅いっぱい*/
+}
 
 .warning{
 	text-decoration: underline;
 	color: #f48a8a;
+}
+
+.unreliable::before{
+	content: "(";
+	color: #888888;
+}
+.unreliable::after{
+	content: ")";
+	color: #888888;
 }

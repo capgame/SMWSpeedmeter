@@ -4,6 +4,7 @@ const app = Vue.createApp({
 			videoDevicesList: [],
 			video: document.createElement('video'),
 			canvas: document.createElement('canvas'),
+			isReliable: true,
 			speedHistory: [0],
 			imageDataHistory: [],
 			isWarning: false,
@@ -26,6 +27,11 @@ const app = Vue.createApp({
 		}
 	},
 	async mounted(){
+		const isSaved = await window.api.store_has("setting");
+		if(isSaved){
+			this.setting = await window.api.store_get("setting");
+		}
+
 		this.getVideoDevices();
 		this.settingScene();
 
@@ -34,11 +40,6 @@ const app = Vue.createApp({
 
 		this.se.src = "assets/warning.mp3";
 		this.se.volume = 0.3;
-
-		const isSaved = await window.api.store_has("setting");
-		if(isSaved){
-			this.setting = await window.api.store_get("setting");
-		}
 	},
 	methods: {
 		getVideoDevices(){
@@ -49,17 +50,18 @@ const app = Vue.createApp({
 			});
 		},
 		settingScene(){
-			window.api.changeWindowSize(400,600);
+			window.api.changeWindowSize(400,570);
 			window.api.setAlwaysOnTop(false);
 			this.scene = 0;
 			if(this.intervalId !== -1){
 				clearInterval(this.intervalId);
 			}
+			this.saveSettings();
 		},
 		meterScene(){
 			this.connectVideo().then(() => {
 				this.scene = 2;
-				window.api.changeWindowSize(180,90);
+				window.api.changeWindowSize(180,100);
 				window.api.setAlwaysOnTop(true);
 			
 				const ctx = this.canvas.getContext("2d",{willReadFrequently: true});
@@ -69,10 +71,9 @@ const app = Vue.createApp({
 				const cropRect = this.setting.cropRect;
 
 				const compareRect = {x: 64,y: 40,w: 128,h: 184};
-				this.intervalId = setInterval(() => {
+
+				const process = () => {
 					ctx.drawImage(this.video,cropRect.x,cropRect.y,cropRect.w,cropRect.h,0,0,GAME_WIDTH,GAME_HEIGHT);
-					
-					let matchRates = [];
 
 					const compareSourceImage =
 					  this.setting.intervalFrame == 32 ? this.imageDataHistory[0]
@@ -83,7 +84,8 @@ const app = Vue.createApp({
 						this.imageDataHistory.unshift(ctx.getImageData(compareRect.x,compareRect.y,compareRect.w,compareRect.h));
 						return;
 					}
-
+					
+					let matchRates = [];
 					for(let x = 0;x < GAME_WIDTH - compareRect.w + 1;x++){
 						const targetImage = ctx.getImageData(x,compareRect.y,compareRect.w,compareRect.h);
 						const similarity = targetImage.compareTo(compareSourceImage,5,1);
@@ -93,13 +95,14 @@ const app = Vue.createApp({
 
 					matchRates.sort((a,b) => b.similarity - a.similarity);	//similarityで降順ソート
 					const estSpeed = 64 - matchRates[0].x;
-					// console.log(matchRates[0].similarity);
 
-					const diffLimit = 0.003;//２番目と１番目の一致率の差がこの値以上ならOK
-					const isReliable = matchRates[0].similarity - matchRates[1].similarity > diffLimit;
-					console.log(matchRates[0].similarity - matchRates[1].similarity);
+					const diffLimit = 0.005;//２番目と１番目の一致率の差がこの値以上ならOK
+					const similarityDiff = matchRates[0].similarity - matchRates[1].similarity;
+					this.isReliable = similarityDiff > diffLimit;
+					console.log(matchRates[0].similarity,similarityDiff,this.isReliable,estSpeed);
+					console.log(64 - matchRates[0].x,64 - matchRates[1].x,64 - matchRates[2].x)
 
-					if(isReliable){
+					if(this.isReliable){
 						this.speedHistory.unshift(estSpeed);
 					}else{//Reliableじゃなかったら前回のを引き続き使用
 						this.speedHistory.unshift(this.speedHistory[0]);
@@ -107,15 +110,15 @@ const app = Vue.createApp({
 					this.speedHistory.length = Math.min(this.speedHistory.length,20);
 
 					const detectWarning = () => {
-						const checkIndex = this.setting.SEPlayTimingFrame / this.setting.intervalFrame;	//historyの調べる数
+						if(this.isReliable === false) return false;
+						const checkLength = this.setting.SEPlayTimingFrame / this.setting.intervalFrame;	//historyの調べる数
 						let speed50Count = 0;
-						for(let i = 0;i < checkIndex;i++){
+						for(let i = 0;i < checkLength;i++){
 							if(this.speedHistory[i] === 50){
 								speed50Count += 1;
 							}
 						}
-						console.log(checkIndex,speed50Count);
-						return speed50Count === checkIndex;
+						return speed50Count === checkLength;
 					};
 					if(detectWarning()){
 						this.isWarning = true;
@@ -126,8 +129,11 @@ const app = Vue.createApp({
 
 					this.imageDataHistory.unshift(ctx.getImageData(compareRect.x,compareRect.y,compareRect.w,compareRect.h));
 					this.imageDataHistory.length = Math.min(this.imageDataHistory.length,8);
-				},1000 / 60 * this.setting.intervalFrame);
-			// },0);
+				}
+				this.intervalId = setInterval(() => {
+					process();
+				// },1000 / 59.94 * this.setting.intervalFrame);
+				},Math.round(1000 / 60.1 * this.setting.intervalFrame));
 			}).catch((e) => {
 				if(e === 1){
 					alert("キャプチャデバイスを選択してください。");
@@ -206,9 +212,7 @@ const app = Vue.createApp({
 		},
 		saveSettings(){
 			window.api.store_set("setting",JSON.stringify(this.setting))
-			.then(() => {
-				alert("設定を保存しました。");
-			}).catch(() => {
+			.then().catch(() => {
 				alert("設定を保存できませんでした。")
 			});
 		}

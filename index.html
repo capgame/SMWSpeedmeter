@@ -17,7 +17,7 @@
 		<div id="app">
 			<div id="setting" v-if="scene === 0">
 				<button type="button" id="start" @click="meterScene">測定開始</button>
-				<h2>映像設定</h2>
+				<h2>設定</h2>
 				<div>
 					<h3>キャプチャデバイス</h2>
 					<select id="select-device" v-model="setting.deviceId">
@@ -28,9 +28,7 @@
 					<h3>クロップ</h2>
 					<p>切り取り範囲: 始点({{setting.cropRect.x}},{{setting.cropRect.y}}) サイズ({{setting.cropRect.w}},{{setting.cropRect.h}})</p>
 					<button type="button" @click="cropScene">ゲーム画面を切り取る</button>
-				</div>
-				<h2>測定設定</h2>
-				<div>
+
 					<h3>間隔</h3>
 					<select v-model.number="setting.intervalFrame">
 						<option value="32" selected>32F(約0.53秒)</option>
@@ -70,7 +68,7 @@
 
 			<div id="main" v-show="scene === 2">
 				<div id="speed-wrap">
-					<span id="speed" v-bind:class="{warning: isWarning}">{{speedHistory[0]}}</span>
+					<span id="speed" v-bind:class="{unreliable: !isReliable,warning: isWarning}">{{speedHistory[0]}}</span>
 					<button type="button" id="return" @click="settingScene()">戻る</button>
 				</div>
 			</div>
