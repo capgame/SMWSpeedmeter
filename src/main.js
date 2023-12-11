@@ -102,11 +102,7 @@ const app = Vue.createApp({
 					console.log(matchRates[0].similarity,similarityDiff,this.isReliable,estSpeed);
 					console.log(64 - matchRates[0].x,64 - matchRates[1].x,64 - matchRates[2].x)
 
-					if(this.isReliable){
-						this.speedHistory.unshift(estSpeed);
-					}else{//Reliableじゃなかったら前回のを引き続き使用
-						this.speedHistory.unshift(this.speedHistory[0]);
-					}
+					this.speedHistory.unshift(estSpeed);
 					this.speedHistory.length = Math.min(this.speedHistory.length,20);
 
 					const detectWarning = () => {
