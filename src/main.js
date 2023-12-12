@@ -23,6 +23,17 @@ const app = Vue.createApp({
 				playsSE: false,
 				SEPlayTimingFrame: 128,	//何フレーム以上50飛行をした場合に効果音を鳴らすか
 			},
+			cropping: {
+				isDragMode: false,
+				begin: {
+					x: 0,
+					y: 0,
+				},
+				current: {
+					x: 0,
+					y: 0,
+				},
+			},
 			se: new Audio(),
 		}
 	},
@@ -105,31 +116,32 @@ const app = Vue.createApp({
 					this.speedHistory.unshift(estSpeed);
 					this.speedHistory.length = Math.min(this.speedHistory.length,20);
 
-					const detectWarning = () => {
-						if(this.isReliable === false) return false;
-						const checkLength = this.setting.SEPlayTimingFrame / this.setting.intervalFrame;	//historyの調べる数
-						let speed50Count = 0;
-						for(let i = 0;i < checkLength;i++){
-							if(this.speedHistory[i] === 50){
-								speed50Count += 1;
-							}
+					this.imageDataHistory.unshift(ctx.getImageData(compareRect.x,compareRect.y,compareRect.w,compareRect.h));
+					this.imageDataHistory.length = Math.min(this.imageDataHistory.length,8);
+				}
+				
+				const detectWarning = () => {
+					if(this.isReliable === false) return false;
+					const checkLength = this.setting.SEPlayTimingFrame / this.setting.intervalFrame;	//historyの調べる数
+					let speed50Count = 0;
+					for(let i = 0;i < checkLength;i++){
+						if(this.speedHistory[i] === 50){
+							speed50Count += 1;
 						}
-						return speed50Count === checkLength;
-					};
+					}
+					return speed50Count === checkLength;
+				};
+
+				this.intervalId = setInterval(() => {
+					process();
 					if(detectWarning()){
 						this.isWarning = true;
 						if(this.setting.playsSE) this.se.play();
 					}else{
 						this.isWarning = false;
 					}
-
-					this.imageDataHistory.unshift(ctx.getImageData(compareRect.x,compareRect.y,compareRect.w,compareRect.h));
-					this.imageDataHistory.length = Math.min(this.imageDataHistory.length,8);
-				}
-				this.intervalId = setInterval(() => {
-					process();
 				// },1000 / 59.94 * this.setting.intervalFrame);
-				},Math.round(1000 / 60.1 * this.setting.intervalFrame));
+				},1000 / 60 * this.setting.intervalFrame);
 			}).catch((e) => {
 				if(e === 1){
 					alert("キャプチャデバイスを選択してください。");
@@ -145,12 +157,10 @@ const app = Vue.createApp({
 				const fullCtx = document.querySelector("#crop-full").getContext("2d");
 				const zoomCtx = document.querySelector("#crop-zoom").getContext("2d");
 				zoomCtx.imageSmoothingEnabled = false;
-				fullCtx.fillStyle = "#000000aa";
 
 				const CANVAS_WIDTH  = 384;
 				const CANVAS_HEIGHT = 216;
 
-				const cropRect = this.setting.cropRect;
 				const scaleX = CANVAS_WIDTH / this.video.videoWidth;
 				const scaleY = CANVAS_HEIGHT / this.video.videoHeight;
 
@@ -161,25 +171,41 @@ const app = Vue.createApp({
 				zoomCtx.fillRect(  0,144,16,16);
 				zoomCtx.fillRect(144,144,16,16);
 
+				const fillOutside = (rect) => {
+					fullCtx.fillRect(0,0,this.video.videoWidth,parseInt(rect.y * scaleY));	//上
+					fullCtx.fillRect(0,parseInt(rect.y * scaleX),rect.x * scaleX,parseInt(rect.h * scaleY));	//左
+					fullCtx.fillRect((rect.x + rect.w) * scaleX,parseInt(rect.y * scaleX),this.video.videoWidth,parseInt(rect.h * scaleY));	//右
+					fullCtx.fillRect(0,parseInt((rect.y + rect.h) * scaleY),this.video.videoWidth,this.video.videoHeight);	//下
+				};
+
 				this.intervalId = setInterval(() => {
-					const fillOutsideDark = () => {
-						fullCtx.fillRect(0,0,this.video.videoWidth,parseInt(cropRect.y * scaleY));	//上
-						fullCtx.fillRect(0,parseInt(cropRect.y * scaleX),cropRect.x * scaleX,parseInt(cropRect.h * scaleY));	//左
-						fullCtx.fillRect((cropRect.x + cropRect.w) * scaleX,parseInt(cropRect.y * scaleX),this.video.videoWidth,parseInt(cropRect.h * scaleY));	//右
-						fullCtx.fillRect(0,parseInt((cropRect.y + cropRect.h) * scaleY),this.video.videoWidth,this.video.videoHeight);	//下
-					};
-					const drawZoomedImages = () => {
-						const zoomedSizeW = 12 * (cropRect.w / 256);
-						const zoomedSizeH = 12 * (cropRect.h / 256);
-	
-						zoomCtx.drawImage(this.video,cropRect.x,cropRect.y,zoomedSizeW,zoomedSizeH, 4, 4,72,72);	//左上
-						zoomCtx.drawImage(this.video,cropRect.x + cropRect.w - zoomedSizeW,cropRect.y,zoomedSizeW,zoomedSizeH,84, 4,72,72);	//右上
-						zoomCtx.drawImage(this.video,cropRect.x,cropRect.y + cropRect.h - zoomedSizeH,zoomedSizeW,zoomedSizeH, 4,84,72,72);	//左下
-						zoomCtx.drawImage(this.video,cropRect.x + cropRect.w - zoomedSizeW,cropRect.y + cropRect.h - zoomedSizeH,zoomedSizeW,zoomedSizeH,84,84,72,72);	//右下
-					};
-					fullCtx.drawImage(this.video,0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-					fillOutsideDark();
-					drawZoomedImages();
+					if(this.cropping.isDragMode){
+						const rectSize = {
+							x: Math.min(this.cropping.begin.x,this.cropping.current.x),
+							y: Math.min(this.cropping.begin.y,this.cropping.current.y),
+							w: Math.abs(this.cropping.begin.x - this.cropping.current.x),
+							h: Math.abs(this.cropping.begin.y - this.cropping.current.y),
+						};
+						fullCtx.fillStyle = "#ffffff44";
+						fullCtx.drawImage(this.video,0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
+						fillOutside(rectSize);
+					}else{
+						const drawZoomedImages = () => {
+							const zoomedSizeW = 12 * (cropRect.w / 256);
+							const zoomedSizeH = 12 * (cropRect.h / 256);
+		
+							zoomCtx.drawImage(this.video,cropRect.x,cropRect.y,zoomedSizeW,zoomedSizeH, 4, 4,72,72);	//左上
+							zoomCtx.drawImage(this.video,cropRect.x + cropRect.w - zoomedSizeW,cropRect.y,zoomedSizeW,zoomedSizeH,84, 4,72,72);	//右上
+							zoomCtx.drawImage(this.video,cropRect.x,cropRect.y + cropRect.h - zoomedSizeH,zoomedSizeW,zoomedSizeH, 4,84,72,72);	//左下
+							zoomCtx.drawImage(this.video,cropRect.x + cropRect.w - zoomedSizeW,cropRect.y + cropRect.h - zoomedSizeH,zoomedSizeW,zoomedSizeH,84,84,72,72);	//右下
+						};
+
+						const cropRect = this.setting.cropRect;
+						fullCtx.drawImage(this.video,0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
+						fullCtx.fillStyle = "#000000aa";
+						fillOutside(cropRect);
+						drawZoomedImages();
+					}
 				},1000 / 60);
 			}).catch((e) => {
 				if(e === 1){
@@ -188,6 +214,57 @@ const app = Vue.createApp({
 					alert("キャプチャデバイスに接続できませんでした。");
 				}
 			});
+		},
+		cropWithDragging(){
+			this.cropping.isDragMode = true;
+
+			this.cropping.begin.x = 0;
+			this.cropping.begin.y = 0;
+			this.cropping.current.x = 0;
+			this.cropping.current.y = 0;
+
+			const cvs = document.querySelector("#crop-full");
+			const rect = cvs.getBoundingClientRect();
+
+			const CANVAS_WIDTH  = 384;
+			const CANVAS_HEIGHT = 216;
+
+			const scaleX = CANVAS_WIDTH / this.video.videoWidth;
+			const scaleY = CANVAS_HEIGHT / this.video.videoHeight;
+
+			const mousedown = e => {
+				this.cropping.begin.x = Math.min(Math.max(0,(e.clientX - rect.left) / scaleX),this.video.videoWidth);
+				this.cropping.begin.y = Math.min(Math.max(0,(e.clientY - rect.top) / scaleY),this.video.videoHeight);
+				this.cropping.current.x = this.cropping.begin.x;
+				this.cropping.current.y = this.cropping.begin.y;
+				console.log(this.cropping.begin)
+
+				const mousemove = e => {
+					this.cropping.current.x = Math.min(Math.max(0,(e.clientX - rect.left) / scaleX),this.video.videoWidth);
+					this.cropping.current.y = Math.min(Math.max(0,(e.clientY - rect.top) / scaleY),this.video.videoHeight);
+				};
+				const mouseup = e => {
+					this.cropping.isDragMode = false;
+					window.removeEventListener("mousedown",mousedown);
+					window.removeEventListener("mousemove",mousemove);
+					window.removeEventListener(  "mouseup",mouseup);
+
+					const rectSize = {
+						x: Math.min(this.cropping.begin.x,this.cropping.current.x),
+						y: Math.min(this.cropping.begin.y,this.cropping.current.y),
+						w: Math.abs(this.cropping.begin.x - this.cropping.current.x),
+						h: Math.abs(this.cropping.begin.y - this.cropping.current.y),
+					};
+					if(rectSize.w < 256 || rectSize.h < 224){
+						alert("範囲が小さすぎます。");
+						return;
+					}
+					this.setting.cropRect = rectSize;
+				};
+				window.addEventListener("mousemove",mousemove);
+				window.addEventListener(  "mouseup",mouseup);
+			};
+			window.addEventListener("mousedown",mousedown);
 		},
 		connectVideo(){
 			if(this.setting.deviceId === "none"){

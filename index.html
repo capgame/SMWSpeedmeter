@@ -13,7 +13,7 @@
 		<script src="https://unpkg.com/vue@next"></script>
 	</head>
 	<body>
-		<header><img src="assets/icon.ico" height="16">SMWSpeedmeter v1.0.0</header>
+		<header><img src="assets/icon.ico" height="16">SMWSpeedmeter v1.1.0</header>
 		<div id="app">
 			<div id="setting" v-if="scene === 0">
 				<button type="button" id="start" @click="meterScene">測定開始</button>
@@ -58,7 +58,7 @@
 						始点Y: <input type="number" min="0" max="1080" v-model="setting.cropRect.y"><br>
 						幅: <input type="number" min="1" max="1920" v-model="setting.cropRect.w"><br>
 						高さ: <input type="number" min="1" max="1080" v-model="setting.cropRect.h"><br>
-						<!-- <button type="button" id="drag-btn" disabled>ドラッグして切り取る</button> -->
+						<button type="button" @click="cropWithDragging()" >ドラッグして切り取る</button>
 					</div>
 					<canvas id="crop-zoom" width="160" height="160"></canvas>
 				</div>
