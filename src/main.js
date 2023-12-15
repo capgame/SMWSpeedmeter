@@ -172,10 +172,11 @@ const app = Vue.createApp({
 				zoomCtx.fillRect(144,144,16,16);
 
 				const fillOutside = (rect) => {
-					fullCtx.fillRect(0,0,this.video.videoWidth,parseInt(rect.y * scaleY));	//上
-					fullCtx.fillRect(0,parseInt(rect.y * scaleX),rect.x * scaleX,parseInt(rect.h * scaleY));	//左
-					fullCtx.fillRect((rect.x + rect.w) * scaleX,parseInt(rect.y * scaleX),this.video.videoWidth,parseInt(rect.h * scaleY));	//右
-					fullCtx.fillRect(0,parseInt((rect.y + rect.h) * scaleY),this.video.videoWidth,this.video.videoHeight);	//下
+					fullCtx.fillRect(0,0,this.video.videoWidth,Math.round(rect.y * scaleY));	//上
+					fullCtx.fillRect(0,Math.round(rect.y * scaleY),rect.x * scaleX,Math.round(rect.h * scaleY));	//左
+					fullCtx.fillRect((rect.x + rect.w) * scaleX,Math.round(rect.y * scaleY),this.video.videoWidth,Math.round(rect.h * scaleY));	//右
+					fullCtx.fillRect(0,Math.round(rect.y * scaleY) + Math.round(rect.h * scaleY),this.video.videoWidth,this.video.videoHeight);	//下
+					// fullCtx.fillRect(0,Math.round((rect.y + rect.h) * scaleY),this.video.videoWidth,this.video.videoHeight);	//下
 				};
 
 				this.intervalId = setInterval(() => {
