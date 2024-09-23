@@ -1,4 +1,6 @@
-const app = Vue.createApp({
+import {createApp} from '../node_modules/vue/dist/vue.esm-browser.js'
+
+const app = createApp({
 	data(){
 		return {
 			videoDevicesList: [],
@@ -33,6 +35,9 @@ const app = Vue.createApp({
 					x: 0,
 					y: 0,
 				},
+			},
+			measureSetting: {
+				
 			},
 			se: new Audio(),
 		}
@@ -72,7 +77,8 @@ const app = Vue.createApp({
 		meterScene(){
 			this.connectVideo().then(() => {
 				this.scene = 2;
-				window.api.changeWindowSize(180,100);
+				// window.api.changeWindowSize(200,100);
+				window.api.changeWindowSize(200,200);
 				window.api.setAlwaysOnTop(true);
 			
 				const ctx = this.canvas.getContext("2d",{willReadFrequently: true});
@@ -110,8 +116,25 @@ const app = Vue.createApp({
 					const diffLimit = 0.005;//２番目と１番目の一致率の差がこの値以上ならOK
 					const similarityDiff = matchRates[0].similarity - matchRates[1].similarity;
 					this.isReliable = similarityDiff > diffLimit;
-					console.log(matchRates[0].similarity,similarityDiff,this.isReliable,estSpeed);
-					console.log(64 - matchRates[0].x,64 - matchRates[1].x,64 - matchRates[2].x)
+
+document.querySelector("#dev-log").innerHTML = 
+`<table>
+	<tr>
+		<td>[0]</td>
+		<td>${64 - matchRates[0].x}</td>
+		<td>${matchRates[0].similarity.toFixed(5)}</td>
+	</tr>
+	<tr>
+		<td>[1]</td>
+		<td>${64 - matchRates[1].x}</td>
+		<td>${matchRates[1].similarity.toFixed(5)}</td>
+	</tr>
+	<tr>
+		<td>[2]</td>
+		<td>${64 - matchRates[2].x}</td>
+		<td>${matchRates[2].similarity.toFixed(5)}</td>
+	</tr>
+</table>`;
 
 					this.speedHistory.unshift(estSpeed);
 					this.speedHistory.length = Math.min(this.speedHistory.length,20);

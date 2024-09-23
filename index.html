@@ -2,7 +2,7 @@
 <html lang="ja">
 	<head>
 		<meta charset="UTF-8" />
-		<meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-eval' 'self' https://unpkg.com/">
+		<meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-eval' 'self' https://unpkg.com/ npm">
 		<meta http-equiv="Content-Security-Policy" content="style-src 'self' 'unsafe-inline'">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="stylesheet" href="style/main.css">
@@ -10,10 +10,9 @@
 		<link rel="stylesheet" href="style/cropping.css">
 		<link rel="stylesheet" href="style/meter.css">
 		<title>SMWSpeedmeter</title>
-		<script src="https://unpkg.com/vue@next"></script>
 	</head>
 	<body>
-		<header><img src="assets/icon.ico" height="16">SMWSpeedmeter v1.0.1</header>
+		<header><img src="assets/icon.ico" height="16">SMWSpeedmeter v1.0.2</header>
 		<div id="app">
 			<div id="setting" v-if="scene === 0">
 				<button type="button" id="start" @click="meterScene">測定開始</button>
@@ -71,9 +70,12 @@
 					<span id="speed" v-bind:class="{unreliable: !isReliable,warning: isWarning}">{{speedHistory[0]}}</span>
 					<button type="button" id="return" @click="settingScene()">戻る</button>
 				</div>
+				<div id="dev-log">
+					
+				</div>
 			</div>
 		</div>
 		<script src="src/compare.js"></script>
-		<script src="src/main.js"></script>
+		<script type="module" src="src/main.js"></script>
 	</body>
 </html>

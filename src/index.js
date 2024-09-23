@@ -1,7 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const Store = require('electron-store');
 const path = require("path");
-
 const store = new Store();
 
 const createWindow = () => {
